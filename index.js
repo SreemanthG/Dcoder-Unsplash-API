@@ -17,19 +17,31 @@ const app = express();
 //Middlewares
 app.use(express.json());
 
-const processData = (json) => {
+const processData = (response, page=1, perPage=10) => {
     const results = [];
-    json.forEach(pic => {
+    response.results.forEach(pic => {
 
         results.push(
             {
                 id: pic.id,
                 description: pic.description,
-                ...pic.links
+                url:pic.links.download,
+                user:{
+                    id:pic.user.id,
+                    username:pic.user.username,
+                    name:pic.user.name,
+                    profileURL:pic.user.links.self
+                }
             }
         );
     });
-    return results;
+    return {
+        total:response.total,
+        pages:response.total_pages,
+        perPage: perPage,
+        page:page,
+        data:results
+    };
 }
 
 //Routes
@@ -45,8 +57,8 @@ app.get("/getImages",async (req,res)=>{
         const photos = await unsplash.search.getPhotos({
             ...options
         });
-        // console.log(photos.response.results)
-        res.json(processData(photos.response.results));
+        console.log(photos.response)
+        res.json(processData(photos.response, options.page, options.perPage));
     } catch (err) {
         console.log(err)
         res.send({error:err.message})
